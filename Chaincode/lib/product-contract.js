@@ -152,7 +152,30 @@ class ProductContract extends Contract {
         }
     }
 
+    async queryProductByStatus(ctx, status) {
+        const queryString = {
+            selector: {
+                status: status
+            }
+        };
+        const products = await this._getQueryResult(ctx, JSON.stringify(queryString));
+        return JSON.stringify(products);
+    }
+
+    async _getQueryResult(ctx, queryString) {
+        const iterator = await ctx.stub.getQueryResult(queryString);
+        const results = [];
+        let res = await iterator.next();
     
+        while (!res.done) {
+            const result = res.value.value.toString('utf8');
+            results.push(JSON.parse(result));
+            res = await iterator.next();
+        }
+    
+        await iterator.close();
+        return results;
+    }
 
     async queryAllProducts(ctx) {
         const queryString = {
