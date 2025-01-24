@@ -1,0 +1,159 @@
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: ../organizations/ordererOrganizations/agri.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.agri.com:7050
+  - &manufacturer
+    Name: manufacturerMSP
+    ID: manufacturerMSP
+    MSPDir: ../organizations/peerOrganizations/manufacturer.agri.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('manufacturerMSP.admin', 'manufacturerMSP.peer', 'manufacturerMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('manufacturerMSP.admin', 'manufacturerMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('manufacturerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('manufacturerMSP.peer')"
+  - &wholesaler
+    Name: wholesalerMSP
+    ID: wholesalerMSP
+    MSPDir: ../organizations/peerOrganizations/wholesaler.agri.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('wholesalerMSP.admin', 'wholesalerMSP.peer', 'wholesalerMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('wholesalerMSP.admin', 'wholesalerMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('wholesalerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('wholesalerMSP.peer')"
+  - &distributer
+    Name: distributerMSP
+    ID: distributerMSP
+    MSPDir: ../organizations/peerOrganizations/distributer.agri.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('distributerMSP.admin', 'distributerMSP.peer', 'distributerMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('distributerMSP.admin', 'distributerMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('distributerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('distributerMSP.peer')"
+  
+
+
+Capabilities:  
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+    
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  Addresses:
+    - orderer.agri.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  ChannelUsingRaft:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      OrdererType: etcdraft
+      EtcdRaft:
+        Consenters:
+          - Host: orderer.agri.com
+            Port: 7050
+            ClientTLSCert: ../organizations/ordererOrganizations/agri.com/orderers/orderer.agri.com/tls/server.crt
+            ServerTLSCert: ../organizations/ordererOrganizations/agri.com/orderers/orderer.agri.com/tls/server.crt
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *manufacturer
+        - *distributer
+        - *wholesaler
+      Capabilities: *ApplicationCapabilities
