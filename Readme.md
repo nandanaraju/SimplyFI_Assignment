@@ -1,5 +1,5 @@
 
-# SimplyFi Assignment
+# Hyperledger Fabric Assignment
 
 ## Setup Instructions
 
